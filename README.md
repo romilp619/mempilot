@@ -48,3 +48,6 @@ read with query-only access (`IOCTL_STORAGE_QUERY_PROPERTY`). Settings live in
     node scripts/ui-check.mjs shots    # screenshots the memory pages against a mock backend
 
 Most clean-up steps need the app to run as administrator; the app offers "Restart as administrator".
+
+## License
+MIT, see [LICENSE](LICENSE).
