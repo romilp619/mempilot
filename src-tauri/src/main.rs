@@ -540,6 +540,26 @@ fn main() {
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
+            let mut wb = tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                .title("MemPilot")
+                .inner_size(1080.0, 760.0)
+                .min_inner_size(880.0, 620.0)
+                .visible(false);
+            // Test/demo runs only: WebView2 ignores its WEBVIEW2_* variables in an elevated
+            // process, so the debug port and a separate profile are set here instead.
+            if std::env::var_os("MEMPILOT_TEST_INSTANCE").is_some() {
+                if let Ok(port) = std::env::var("MEMPILOT_CDP_PORT") {
+                    if port.parse::<u16>().is_ok() {
+                        wb = wb.additional_browser_args(&format!(
+                            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port={port}"
+                        ));
+                    }
+                }
+                if let Some(dir) = std::env::var_os("MEMPILOT_WEBVIEW_DIR") {
+                    wb = wb.data_directory(dir.into());
+                }
+            }
+            wb.build()?;
             let open = MenuItem::with_id(app, "open", "Open MemPilot", true, None::<&str>)?;
             let opt = MenuItem::with_id(app, "optimize", "Optimize now", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;

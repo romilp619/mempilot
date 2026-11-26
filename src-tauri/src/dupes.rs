@@ -169,7 +169,9 @@ pub fn scan(roots: &[String], filter: Filter, min_bytes: u64, progress: &dyn Fn(
                 }
             }
             for (_, mut same) in by_full.into_iter().filter(|(_, v)| v.len() > 1) {
-                same.sort_by_key(|(_, m)| *m); // oldest first: the UI keeps the first one
+                // Oldest first (the UI keeps the first one); on a tie prefer the shorter name, so
+                // "photo.jpg" is kept over "photo (1).jpg" or "photo - Copy.jpg".
+                same.sort_by_key(|(p, m)| (*m, p.file_name().map(|f| f.len()).unwrap_or(0), p.as_os_str().len()));
                 groups.push(DupGroup { size, files: same.into_iter().map(|(p, m)| DupFile { path: p.to_string_lossy().into(), modified: m }).collect() });
             }
         }

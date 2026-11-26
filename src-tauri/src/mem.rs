@@ -10,15 +10,12 @@ use std::ffi::c_void;
 use std::mem::size_of;
 use std::time::Instant;
 use windows::core::{w, PCWSTR};
-use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_SUCCESS, GENERIC_READ, GENERIC_WRITE, HANDLE, LUID};
+use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_SUCCESS, HANDLE, LUID};
 use windows::Win32::Security::{
     AdjustTokenPrivileges, GetTokenInformation, LookupPrivilegeValueW, TokenElevation, LUID_AND_ATTRIBUTES,
     SE_PRIVILEGE_ENABLED, TOKEN_ADJUST_PRIVILEGES, TOKEN_ELEVATION, TOKEN_PRIVILEGES, TOKEN_QUERY,
 };
-use windows::Win32::Storage::FileSystem::{
-    CreateFileW, FlushFileBuffers, GetDriveTypeW, GetLogicalDriveStringsW, FILE_FLAGS_AND_ATTRIBUTES, FILE_SHARE_READ,
-    FILE_SHARE_WRITE, OPEN_EXISTING,
-};
+use windows::Win32::Storage::FileSystem::{GetDriveTypeW, GetLogicalDriveStringsW};
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
 };
@@ -344,41 +341,37 @@ fn flush_system_file_cache() -> Result<String, String> {
 }
 
 /// Write each fixed volume's dirty cached data to disk (the same thing Windows does a few
-/// seconds later on its own). Nothing is removed.
+/// seconds later on its own). Nothing is removed. Done through Windows' own Write-VolumeCache:
+/// opening the volume for writing directly is blocked by Defender's Controlled Folder Access.
 fn flush_volumes() -> Result<String, String> {
+    use std::os::windows::process::CommandExt;
+    if !is_elevated() {
+        return Err("needs administrator".into());
+    }
     let mut buf = [0u16; 512];
     let n = unsafe { GetLogicalDriveStringsW(Some(&mut buf)) } as usize;
-    let mut flushed = Vec::new();
+    let mut letters = Vec::new();
     for root in buf[..n.min(buf.len())].split(|&c| c == 0).filter(|s| !s.is_empty()) {
         let mut r: Vec<u16> = root.to_vec();
         r.push(0);
         // DRIVE_FIXED = 3
-        if unsafe { GetDriveTypeW(PCWSTR(r.as_ptr())) } != 3 {
-            continue;
-        }
-        let letter = String::from_utf16_lossy(&root[..2]);
-        let path: Vec<u16> = format!("\\\\.\\{letter}").encode_utf16().chain(std::iter::once(0)).collect();
-        unsafe {
-            if let Ok(h) = CreateFileW(
-                PCWSTR(path.as_ptr()),
-                (GENERIC_READ | GENERIC_WRITE).0,
-                FILE_SHARE_READ | FILE_SHARE_WRITE,
-                None,
-                OPEN_EXISTING,
-                FILE_FLAGS_AND_ATTRIBUTES(0),
-                None,
-            ) {
-                if FlushFileBuffers(h).is_ok() {
-                    flushed.push(letter);
-                }
-                let _ = CloseHandle(h);
-            }
+        if unsafe { GetDriveTypeW(PCWSTR(r.as_ptr())) } == 3 {
+            letters.push(String::from_utf16_lossy(&root[..1]));
         }
     }
-    if flushed.is_empty() {
-        Err("needs administrator".into())
+    if letters.is_empty() {
+        return Err("no fixed drives".into());
+    }
+    let out = std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &format!("Write-VolumeCache -DriveLetter {} -ErrorAction Stop", letters.join(","))])
+        .creation_flags(0x0800_0000)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if out.status.success() {
+        Ok(format!("flushed {}", letters.iter().map(|l| format!("{l}:")).collect::<Vec<_>>().join(" ")))
     } else {
-        Ok(format!("flushed {}", flushed.join(" ")))
+        let err = String::from_utf8_lossy(&out.stderr);
+        Err(err.lines().find(|l| !l.trim().is_empty()).unwrap_or("Write-VolumeCache failed").trim().chars().take(120).collect())
     }
 }
 

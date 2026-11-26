@@ -9,7 +9,7 @@ stop() { (cd /mnt/c && powershell.exe -NoProfile -Command 'if (Test-Path "$env:T
 stop; sleep 1
 cp src-tauri/target/x86_64-pc-windows-msvc/release/mempilot.exe "$DEV/"
 cp scripts/cdp.mjs scripts/e2e-win.mjs "$DEV/"
-(cd /mnt/c && powershell.exe -NoProfile -Command '$env:APPDATA="$env:TEMP\mempilot-dev\appdata"; $env:MEMPILOT_TEST_INSTANCE="1"; $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9344"; $env:WEBVIEW2_USER_DATA_FOLDER="$env:TEMP\mempilot-dev\webview"; $p = Start-Process -FilePath "$env:TEMP\mempilot-dev\mempilot.exe" -PassThru; $p.Id | Out-File -Encoding ascii "$env:TEMP\mempilot-dev\pid.txt"; Start-Sleep 3' 2>&1 | tr -d '\r')
+(cd /mnt/c && powershell.exe -NoProfile -Command '$env:APPDATA="$env:TEMP\mempilot-dev\appdata"; $env:MEMPILOT_TEST_INSTANCE="1"; $env:MEMPILOT_CDP_PORT="9344"; $env:MEMPILOT_WEBVIEW_DIR="$env:TEMP\mempilot-dev\webview"; $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9344"; $env:WEBVIEW2_USER_DATA_FOLDER="$env:TEMP\mempilot-dev\webview"; $p = Start-Process -FilePath "$env:TEMP\mempilot-dev\mempilot.exe" -PassThru; $p.Id | Out-File -Encoding ascii "$env:TEMP\mempilot-dev\pid.txt"; Start-Sleep 3' 2>&1 | tr -d '\r')
 PID_W=$(tr -d '\r\n\xef\xbb\xbf' < "$DEV/pid.txt")
 [ "${NOTEST:-0}" = "1" ] || (cd "$DEV" && node.exe e2e-win.mjs 9344 . "$PID_W" 2>&1 | tr -d '\r' | cut -c1-500)
 RC=$?

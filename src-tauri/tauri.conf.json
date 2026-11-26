@@ -10,9 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      { "label": "main", "title": "MemPilot", "width": 1080, "height": 760, "minWidth": 880, "minHeight": 620, "visible": false }
-    ],
+    "windows": [],
     "security": { "csp": null }
   },
   "bundle": {

@@ -369,7 +369,7 @@ function drawHealth() {
       const temp = smi && dgpu ? +smi["temperature.gpu"] : NaN;
       if (temp >= 87) tips.push({ l: "warn", t: `The NVIDIA GPU is at ${temp} °C. Raise the laptop's back for airflow and clean the vents; heat is what ages a GPU.` });
       return `<div class="gpu"><div class="gh"><b>${esc(g.name)}</b><span class="muted small">${fmt(g.vram)} dedicated · busy ${g.util.toFixed(0)}%</span>
-          ${dgpu ? `<span class="tag ${awake ? "cost" : "safe"}">${awake ? "awake" : "sleeping"}</span>` : ""}</div>
+          ${dgpu ? `<span class="tag ${awake ? "cost" : "safe"}">${awake ? `in use by ${g.apps.length} app${g.apps.length > 1 ? "s" : ""}` : "no apps using it"}</span>` : ""}</div>
         ${
           dgpu && smi
             ? `<div class="tiles" style="margin-top:8px">${stat("Temperature", `${smi["temperature.gpu"]} °C`, temp < 80 ? "good" : temp < 87 ? "warn" : "bad")}${stat("Power draw", `${smi["power.draw"]} W`)}${stat("Clock", `${smi["clocks.gr"]} MHz`)}${stat("VRAM", `${smi["memory.used"]} / ${smi["memory.total"]} MB`)}${stat("Power state", esc(smi["pstate"]) + `<span class="muted small"> (P8 = idle)</span>`)}${stat("Driver", esc(smi["driver_version"]))}</div>`
@@ -379,9 +379,9 @@ function drawHealth() {
         }
         ${
           g.apps.length
-            ? `<table style="margin-top:8px"><thead><tr><th>App using this GPU</th><th class="num">GPU memory</th><th class="num">Busy</th>${dgpu ? `<th class="num">Battery</th>` : ""}</tr></thead><tbody>${g.apps
+            ? `<table style="margin-top:8px"><thead><tr><th>App using this GPU</th>${g.discrete ? `<th class="num">GPU memory</th>` : ""}<th class="num">Busy</th>${dgpu ? `<th class="num">Battery</th>` : ""}</tr></thead><tbody>${g.apps
                 .slice(0, 12)
-                .map((a) => `<tr><td>${esc(a.name)}</td><td class="num">${fmt(a.dedicated)}</td><td class="num">${a.util.toFixed(0)}%</td>${
+                .map((a) => `<tr><td>${esc(a.name)}</td>${g.discrete ? `<td class="num">${fmt(a.dedicated)}</td>` : ""}<td class="num">${a.util.toFixed(0)}%</td>${
                   dgpu ? `<td class="num">${a.path ? (a.preference === 1 ? `<button class="btn small" data-gpref="${esc(a.path)}" data-v="0">Undo power saving</button>` : `<button class="btn small" data-gpref="${esc(a.path)}" data-v="1">Use power-saving GPU</button>`) : `<span class="muted small">system</span>`}</td>` : ""
                 }</tr>`)
                 .join("")}</tbody></table>`

@@ -163,3 +163,4 @@ select { background: var(--panel2); border: 1px solid var(--line); border-radius
 .tips .lvl { margin-top: 0; position: relative; top: -1px; }
 .gpu + .gpu { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
 .gpu .gh { display: flex; gap: 12px; align-items: baseline; }
+.go .btn { white-space: nowrap; }
