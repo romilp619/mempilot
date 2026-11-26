@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MemPilot</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <aside class="side">
+      <div class="brand"><span class="logo"></span>MemPilot</div>
+      <nav>
+        <button data-tab="overview" class="on">Overview</button>
+        <button data-tab="standby">Standby cache</button>
+        <button data-tab="processes">Processes</button>
+        <button data-tab="cleaner">Junk cleaner</button>
+        <button data-tab="dupes">Duplicates</button>
+        <button data-tab="health">Laptop health</button>
+        <button data-tab="settings">Settings</button>
+      </nav>
+      <div class="side-foot">
+        <div id="admin"></div>
+        <div class="ver" id="ver"></div>
+      </div>
+    </aside>
+    <main>
+      <section id="tab-overview" class="tab on"></section>
+      <section id="tab-standby" class="tab"></section>
+      <section id="tab-processes" class="tab"></section>
+      <section id="tab-cleaner" class="tab"></section>
+      <section id="tab-dupes" class="tab"></section>
+      <section id="tab-health" class="tab"></section>
+      <section id="tab-settings" class="tab"></section>
+    </main>
+    <div id="toast"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
